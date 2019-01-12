@@ -2,13 +2,13 @@
 "use strict";
 
 var config = require('./config.js');
-var folder2watch = config.folder;
 var url = 'https://grandbazaar3.herokuapp.com';
 var io = require('socket.io-client');
 var socket = io(url);
-
 var readline = require('readline');
 var Writable = require('stream').Writable;
+var folder2watch = config.folder;
+
 var mutableStdout = new Writable({
   write: function(chunk, encoding, callback) {
     if (!this.muted) {
@@ -17,7 +17,9 @@ var mutableStdout = new Writable({
     callback();
   }
 });
+
 mutableStdout.muted = false;
+
 var rl = readline.createInterface({
   input: process.stdin,
   output: mutableStdout,
@@ -105,6 +107,10 @@ function initWatchFolder() {
   console.log('initWatchFolder ...');
   var watch = require('node-watch');
   var fs = require('fs');
+  if (!folder2watch) {
+    console.log("Edite o arquivo config.js e informe a pasta para sincronizar.");
+    return;
+  }
   watch(folder2watch, { recursive: true }, function(evt, name) {
     var path = name.replace(/\\/g, '/');
     fs.stat(path, function(err, stat) {
