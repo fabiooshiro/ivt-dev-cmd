@@ -64,22 +64,24 @@ socket.on('login_error', () => {
 
 async function doLogin() {
   console.log('login...');
+  if (!config.username) {
+    console.log('login:');
+    config.username = await readln();
+  }
+  if (!config.password) {
+    mutableStdout.muted = true;
+    console.log('senha:');
+    config.password = await readln();
+    mutableStdout.muted = false;
+  }
   let params = {
     username: config.username,
     password: config.password,
   }
-  if (!params.username) {
-    console.log('login:');
-    params.username = await readln();
+  if (config.gauth_token !== false) {
+    console.log('token do google authenticator:');
+    params.gauth_token = await readln();
   }
-  if (!params.password) {
-    mutableStdout.muted = true;
-    console.log('senha:');
-    params.password = await readln();
-    mutableStdout.muted = false;
-  }
-  console.log('token do google authenticator:');
-  params.gauth_token = await readln();
   socket.emit('login', params);
 }
 
