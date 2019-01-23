@@ -8,6 +8,7 @@ var socket = io(url);
 var readline = require('readline');
 var Writable = require('stream').Writable;
 var folder2watch = config.folder;
+var folderInitialized = false;
 
 var mutableStdout = new Writable({
   write: function(chunk, encoding, callback) {
@@ -52,7 +53,7 @@ socket.on('msg', (msg) => {
 });
 
 socket.on('login_ok', () => {
-  setInterval(() => {
+  setTimeout(() => {
     doLogin();
   }, 5 * 60 * 1000);
   initWatchFolder();
@@ -77,7 +78,7 @@ async function doLogin() {
   let params = {
     username: config.username,
     password: config.password,
-  }
+  };
   if (config.gauth_token !== false) {
     console.log('token do google authenticator:');
     params.gauth_token = await readln();
@@ -95,7 +96,7 @@ function uploadFile(filepath) {
     filepath: filepath.replace(folder2watch,'').replace(folder2watch.replace(/\\/g,'/'),'')
   };
   console.log('Uploading ' + filepath + '...');
-  var req = request.post({url: url + '/fileupload', formData: formData}, function (err, resp, body) {
+  request.post({url: url + '/fileupload', formData: formData}, function (err, resp, body) {
     if (err) {
       console.log('Erro: upload ' + filepath + '.');
       console.log(err);
@@ -106,6 +107,10 @@ function uploadFile(filepath) {
 }
 
 function initWatchFolder() {
+  if (folderInitialized) {
+    return;
+  }
+  folderInitialized = true;
   console.log('initWatchFolder ...');
   var watch = require('node-watch');
   var fs = require('fs');
