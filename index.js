@@ -45,7 +45,7 @@ doLogin();
 
 socket.on('readFile', (data) => {
   console.log('o servidor pediu o arquivo: ' + (folder2watch + '/' + data).replace(/\\/g,'/'));
-  uploadFile(folder2watch + '/' + data);
+  uploadFile(folder2watch + '/' + data, {why: 'server request'});
 });
 
 socket.on('msg', (msg) => {
@@ -86,23 +86,34 @@ async function doLogin() {
   socket.emit('login', params);
 }
 
-function uploadFile(filepath) {
+function uploadFile(filepath, opts) {
   var request = require('request');
   var fs = require('fs');
-  var formData = {
-    file: fs.createReadStream(filepath),
-    username: config.username,
-    password: config.password,
-    filepath: filepath.replace(folder2watch,'').replace(folder2watch.replace(/\\/g,'/'),'')
-  };
-  console.log('Uploading ' + filepath + '...');
-  request.post({url: url + '/fileupload', formData: formData}, function (err, resp, body) {
+  fs.access(filepath, fs.F_OK, (err) => {
+    var formData = {
+      username: config.username,
+      password: config.password,
+      filepath: filepath.replace(folder2watch,'').replace(folder2watch.replace(/\\/g,'/'),''),
+      why: opts.why
+    };
     if (err) {
-      console.log('Erro: upload ' + filepath + '.');
-      console.log(err);
+      if (err.code === 'ENOENT') {
+        console.log('404 ' + filepath + '...');
+      } else {
+        console.error(err);
+      }
     } else {
-      console.log('Upload ' + filepath + ' ok.');
+      formData.file = fs.createReadStream(filepath);
+      console.log('Uploading ' + filepath + '...');
     }
+    request.post({url: url + '/fileupload', formData: formData}, function (err, resp, body) {
+      if (err) {
+        console.log('Erro: upload ' + filepath + '.');
+        console.log(err);
+      } else {
+        console.log('Upload ' + filepath + ' ok.');
+      }
+    });
   });
 }
 
@@ -127,7 +138,7 @@ function initWatchFolder() {
       }
       if (stat.isFile()) {
         console.log('File %s changed.', path);
-        uploadFile(path);
+        uploadFile(path, {why: 'save'});
       }
     });
   });
